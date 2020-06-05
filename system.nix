@@ -1,7 +1,5 @@
 { pkgs, config, lib, ... }:
-
-with lib;
-with builtins;
+with lib; with builtins;
 let
   cfg = config.environment.persistence;
 
@@ -25,9 +23,7 @@ let
 in
 {
   options = {
-
     environment.persistence = {
-
       targetDir = mkOption {
         type = types.str;
         description = ''
@@ -36,7 +32,6 @@ in
       };
 
       etc = {
-
         directories = mkOption {
           type = with types; listOf str;
           default = [ ];
@@ -47,7 +42,6 @@ in
             [ "NetworkManager/system-connections" ]
           '';
         };
-
         files = mkOption {
           type = with types; listOf str;
           default = [ ];
@@ -55,34 +49,26 @@ in
             Files in /etc that should be stored in persistent storage.
           '';
         };
-
         createMissingDirectories = mkOption {
           type = types.bool;
           default = true;
         };
-
       };
 
       root = {
-
         targetDir = mkOption {
           type = types.str;
         };
-
         directories = mkOption {
           type = with types; listOf str;
           default = [ ];
         };
-
         createMissingDirectories = mkOption {
           type = types.bool;
           default = true;
         };
-
       };
-
     };
-
   };
 
   config = {
@@ -138,5 +124,4 @@ in
           );
       };
   };
-
 }
