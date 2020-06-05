@@ -1,7 +1,5 @@
 { pkgs, config, lib, ... }:
-
-with lib;
-with builtins;
+with lib; with builtins;
 let
   cfg = config.home.persistence;
 
@@ -25,13 +23,11 @@ let
 in
 {
   options = {
-
     home.persistence = mkOption {
       default = { };
       type = with types; attrsOf (
         submodule {
           options = {
-
             directories = mkOption {
               type = with types; listOf string;
               default = [ ];
@@ -51,12 +47,10 @@ in
               type = types.bool;
               default = false;
             };
-
           };
         }
       );
     };
-
   };
 
   config = {
@@ -108,5 +102,4 @@ in
           (attrNames cfg)
       );
   };
-
 }
