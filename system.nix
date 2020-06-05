@@ -2,24 +2,26 @@
 
 with lib;
 with builtins;
-
 let
   cfg = config.environment.persistence;
-  
+
   # ["/home/user/" "/.screenrc"] -> ["home" "user" ".screenrc"]
   splitPath = paths:
-    (filter (s: typeOf s == "string" && s != "")
-            (concatMap (split "/") paths));
-            
+    (filter
+      (s: typeOf s == "string" && s != "")
+      (concatMap (split "/") paths)
+    );
+
   # ["home" "user" ".screenrc"] -> "home/user/.screenrc"
   dirListToPath = dirList: (concatStringsSep "/" dirList);
-  
+
   # ["/home/user/" "/.screenrc"] -> "/home/user/.screenrc"
   concatPaths = paths: (if hasPrefix "/" (head paths) then "/" else "") +
-                         (dirListToPath (splitPath paths));
-                         
-  link = file: pkgs.runCommand "${replaceStrings ["/" "." " "] ["-" "" ""] file}" {}
-                               "ln -s '${file}' $out";
+    (dirListToPath (splitPath paths));
+
+  link = file: pkgs.runCommand "${replaceStrings [ "/" "." " " ] [ "-" "" "" ] file}"
+    { }
+    "ln -s '${file}' $out";
 in
 {
   options = {
@@ -37,7 +39,7 @@ in
 
         directories = mkOption {
           type = with types; listOf str;
-          default = [];
+          default = [ ];
           description = ''
             Directories in /etc that should be stored in persistent storage.
           '';
@@ -48,7 +50,7 @@ in
 
         files = mkOption {
           type = with types; listOf str;
-          default = [];
+          default = [ ];
           description = ''
             Files in /etc that should be stored in persistent storage.
           '';
@@ -58,7 +60,7 @@ in
           type = types.bool;
           default = true;
         };
-        
+
       };
 
       root = {
@@ -69,7 +71,7 @@ in
 
         directories = mkOption {
           type = with types; listOf str;
-          default = [];
+          default = [ ];
         };
 
         createMissingDirectories = mkOption {
@@ -80,50 +82,61 @@ in
       };
 
     };
-    
+
   };
 
   config = {
     environment.etc =
-      listToAttrs
-        (map (fileOrDir:
-                nameValuePair
-                  fileOrDir
-                  { source = link (concatPaths [cfg.targetDir "etc" fileOrDir]); })
-             (cfg.etc.files ++ cfg.etc.directories));
+      listToAttrs (
+        map
+          (fileOrDir:
+            nameValuePair
+              fileOrDir { source = link (concatPaths [ cfg.targetDir "etc" fileOrDir ]); }
+          )
+          (cfg.etc.files ++ cfg.etc.directories)
+      );
 
     fileSystems =
-      listToAttrs
-        (map (dir:
-                nameValuePair
-                  (concatPaths ["/" dir])
-                  {
-                    device = concatPaths [cfg.targetDir dir];
-                    noCheck = true;
-                    options = ["bind"];
-                  })
-             cfg.root.directories);
+      listToAttrs (
+        map
+          (dir:
+            nameValuePair
+              (concatPaths [ "/" dir ]) {
+              device = concatPaths [ cfg.targetDir dir ];
+              noCheck = true;
+              options = [ "bind" ];
+            })
+          cfg.root.directories
+      );
 
     system.activationScripts =
       optionalAttrs cfg.etc.createMissingDirectories {
-        createDirsInEtc = noDepEntry
-                            (concatMapStrings
-                               (dir: let targetDir = concatPaths [cfg.targetDir "etc" dir]; in ''
-                                 if [[ ! -e "${targetDir}" ]]; then
-                                     mkdir -p "${targetDir}"
-                                 fi
-                               '')
-                               cfg.etc.directories);
+        createDirsInEtc =
+          noDepEntry (
+            concatMapStrings
+              (dir:
+                let targetDir = concatPaths [ cfg.targetDir "etc" dir ]; in
+                ''
+                  if [[ ! -e "${targetDir}" ]]; then
+                      mkdir -p "${targetDir}"
+                  fi
+                '')
+              cfg.etc.directories
+          );
       } // optionalAttrs cfg.root.createMissingDirectories {
-        createDirsInRoot = noDepEntry
-                             (concatMapStrings
-                                (dir: let targetDir = concatPaths [cfg.targetDir dir]; in ''
-                                  if [[ ! -e "${targetDir}" ]]; then
-                                      mkdir -p "${targetDir}"
-                                  fi
-                                '')
-                                cfg.root.directories);
+        createDirsInRoot =
+          noDepEntry (
+            concatMapStrings
+              (dir:
+                let targetDir = concatPaths [ cfg.targetDir dir ]; in
+                ''
+                  if [[ ! -e "${targetDir}" ]]; then
+                      mkdir -p "${targetDir}"
+                  fi
+                '')
+              cfg.root.directories
+          );
       };
   };
-  
+
 }
